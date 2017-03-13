@@ -133,7 +133,7 @@ func New(r io.Reader, w io.Writer) *AGI {
 func NewConn(conn net.Conn) *AGI {
 	a := New(conn, conn)
 	a.conn = conn
-	return &a
+	return a
 }
 
 // NewStdio returns a new AGI session to stdin and stdout.
