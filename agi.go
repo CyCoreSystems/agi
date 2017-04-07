@@ -110,10 +110,15 @@ const (
 // HandlerFunc is a function which accepts an AGI instance
 type HandlerFunc func(*AGI)
 
-// New returns a new AGI session to the given
-// `io.Reader` and `io.Writer`.  The initial
-// variables will be read in.
-func New(r io.Reader, eagi io.Reader, w io.Writer) *AGI {
+// New is an alias to NewWithEAGI, sans-EAGI.
+func New(r io.Reader, w io.Writer) *AGI {
+	return NewWithEAGI(r, nil, w)
+}
+
+// NewWithEAGI returns a new AGI session to the given `os.Stdin` `io.Reader`,
+// EAGI `io.Reader`, and `os.Stdout` `io.Writer`. The initial variables will
+// be read in.
+func NewWithEAGI(r io.Reader, eagi io.Reader, w io.Writer) *AGI {
 	a := AGI{
 		Variables: make(map[string]string),
 		r:         r,
@@ -133,14 +138,14 @@ func New(r io.Reader, eagi io.Reader, w io.Writer) *AGI {
 
 // NewConn returns a new AGI session bound to the given net.Conn interface
 func NewConn(conn net.Conn) *AGI {
-	a := New(conn, nil, conn)
+	a := New(conn, conn)
 	a.conn = conn
 	return a
 }
 
 // NewStdio returns a new AGI session to stdin and stdout.
 func NewStdio() *AGI {
-	return New(os.Stdin, os.NewFile(uintptr(3), "/dev/stdeagi"), os.Stdout)
+	return NewWithEAGI(os.Stdin, os.NewFile(uintptr(3), "/dev/stdeagi"), os.Stdout)
 }
 
 // Listen binds an AGI HandlerFunc to the given TCP `host:port` address, creating a FastAGI service.
