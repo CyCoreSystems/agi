@@ -58,8 +58,9 @@ type AGI struct {
 	// of the AGI session.
 	Variables map[string]string
 
-	r io.Reader
-	w io.Writer
+	r    io.Reader
+	eagi io.Reader
+	w    io.Writer
 
 	conn net.Conn
 
@@ -112,10 +113,11 @@ type HandlerFunc func(*AGI)
 // New returns a new AGI session to the given
 // `io.Reader` and `io.Writer`.  The initial
 // variables will be read in.
-func New(r io.Reader, w io.Writer) *AGI {
+func New(r io.Reader, eagi io.Reader, w io.Writer) *AGI {
 	a := AGI{
 		Variables: make(map[string]string),
 		r:         r,
+		eagi:      eagi,
 		w:         w,
 	}
 
@@ -131,14 +133,14 @@ func New(r io.Reader, w io.Writer) *AGI {
 
 // NewConn returns a new AGI session bound to the given net.Conn interface
 func NewConn(conn net.Conn) *AGI {
-	a := New(conn, conn)
+	a := New(conn, nil, conn)
 	a.conn = conn
 	return a
 }
 
 // NewStdio returns a new AGI session to stdin and stdout.
 func NewStdio() *AGI {
-	return New(os.Stdin, os.Stdout)
+	return New(os.Stdin, os.NewFile(uintptr(3), "/dev/stdeagi"), os.Stdout)
 }
 
 // Listen binds an AGI HandlerFunc to the given TCP `host:port` address, creating a FastAGI service.
@@ -165,6 +167,11 @@ func (a *AGI) Close() {
 		a.conn.Close()
 		a.conn = nil
 	}
+}
+
+// EAGI enables access to the EAGI incoming stream (if available).
+func (a *AGI) EAGI() io.Reader {
+	return a.eagi
 }
 
 // Command sends the given command line to stdout
