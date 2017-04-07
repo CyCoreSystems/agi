@@ -145,6 +145,11 @@ func NewConn(conn net.Conn) *AGI {
 
 // NewStdio returns a new AGI session to stdin and stdout.
 func NewStdio() *AGI {
+	return New(os.Stdin, os.Stdout)
+}
+
+// NewEAGI returns a new AGI session to stdin, the EAGI stream (FD=3), and stdout.
+func NewEAGI() *AGI {
 	return NewWithEAGI(os.Stdin, os.NewFile(uintptr(3), "/dev/stdeagi"), os.Stdout)
 }
 
