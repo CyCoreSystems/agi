@@ -155,6 +155,10 @@ func NewEAGI() *AGI {
 
 // Listen binds an AGI HandlerFunc to the given TCP `host:port` address, creating a FastAGI service.
 func Listen(addr string, handler HandlerFunc) error {
+	if addr == "" {
+		addr = "localhost:4573"
+	}
+
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return errors.Wrap(err, "failed to bind server")
