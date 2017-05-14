@@ -110,20 +110,20 @@ const (
 // HandlerFunc is a function which accepts an AGI instance
 type HandlerFunc func(*AGI)
 
-// New is an alias to NewWithEAGI, sans-EAGI.
+// New creates an AGI session from the given reader and writer.
 func New(r io.Reader, w io.Writer) *AGI {
-	return NewWithEAGI(r, nil, w)
+	return NewWithEAGI(r, w, nil)
 }
 
 // NewWithEAGI returns a new AGI session to the given `os.Stdin` `io.Reader`,
 // EAGI `io.Reader`, and `os.Stdout` `io.Writer`. The initial variables will
 // be read in.
-func NewWithEAGI(r io.Reader, eagi io.Reader, w io.Writer) *AGI {
+func NewWithEAGI(r io.Reader, w io.Writer, eagi io.Reader) *AGI {
 	a := AGI{
 		Variables: make(map[string]string),
 		r:         r,
-		eagi:      eagi,
 		w:         w,
+		eagi:      eagi,
 	}
 
 	s := bufio.NewScanner(a.r)
@@ -150,7 +150,7 @@ func NewStdio() *AGI {
 
 // NewEAGI returns a new AGI session to stdin, the EAGI stream (FD=3), and stdout.
 func NewEAGI() *AGI {
-	return NewWithEAGI(os.Stdin, os.NewFile(uintptr(3), "/dev/stdeagi"), os.Stdout)
+	return NewWithEAGI(os.Stdin, os.Stdout, os.NewFile(uintptr(3), "/dev/stdeagi"))
 }
 
 // Listen binds an AGI HandlerFunc to the given TCP `host:port` address, creating a FastAGI service.
