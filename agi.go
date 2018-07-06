@@ -163,7 +163,7 @@ func Listen(addr string, handler HandlerFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to bind server")
 	}
-	defer l.Close()
+	defer l.Close() // nolint: errcheck
 
 	for {
 		conn, err := l.Accept()
@@ -176,11 +176,12 @@ func Listen(addr string, handler HandlerFunc) error {
 }
 
 // Close closes any network connection associated with the AGI instance
-func (a *AGI) Close() {
+func (a *AGI) Close() (err error) {
 	if a.conn != nil {
-		a.conn.Close()
+		err = a.conn.Close()
 		a.conn = nil
 	}
+	return
 }
 
 // EAGI enables access to the EAGI incoming stream (if available).
@@ -199,7 +200,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 
 	_, err := a.w.Write([]byte(strings.Join(cmd, " ")))
 	if err != nil {
-		resp.Error = errors.Wrap(err, "failed to format command")
+		resp.Error = errors.Wrap(err, "failed to send command")
 		return
 	}
 
