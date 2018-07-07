@@ -104,12 +104,11 @@ type SynthResult struct {
 }
 
 // MRCPSynth synthesizes speech for a prompt via MRCP. (requires UniMRCP app and resource to be compiled and loaded in Asterisk).
-func (a *AGI) MRCPSynth(prompt string, opts ...string) (res *SynthResult, err error) {
+func (a *AGI) MRCPSynth(prompt string, opts string) (res *SynthResult, err error) {
 	var cause string
 	res = new(SynthResult)
 
-	cmd := append([]string{"MRCPSynth", prompt}, opts...)
-	ret, err := a.Exec(cmd...)
+	ret, err := a.Exec([]string{"MRCPSynth", prompt, opts}...)
 	if err != nil {
 		return
 	}
@@ -131,9 +130,9 @@ func (a *AGI) MRCPSynth(prompt string, opts ...string) (res *SynthResult, err er
 }
 
 // MRCPRecog listens for speech and optionally plays a prompt. (requires UniMRCP app and resource to be compiled and loaded in Asterisk).
-func (a *AGI) MRCPRecog(grammar string, opts ...string) (*RecognitionResult, error) {
-	cmd := append([]string{"MRCPRecog", grammar}, opts...)
-	ret, err := a.Exec(cmd...)
+func (a *AGI) MRCPRecog(grammar string, opts string) (*RecognitionResult, error) {
+
+	ret, err := a.Exec([]string{"MRCPRecog", grammar, opts}...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +144,9 @@ func (a *AGI) MRCPRecog(grammar string, opts ...string) (*RecognitionResult, err
 }
 
 // SynthAndRecog plays a synthesized prompt and waits for speech to be recognized (requires UniMRCP app and resource to be compiled and loaded in Asterisk).
-func (a *AGI) SynthAndRecog(prompt string, grammar string, opts ...string) (*RecognitionResult, error) {
-	cmd := append([]string{"SynthAndRecog", prompt, grammar}, opts...)
-	ret, err := a.Exec(cmd...)
+func (a *AGI) SynthAndRecog(prompt string, grammar string, opts string) (*RecognitionResult, error) {
+
+	ret, err := a.Exec([]string{"SynthAndRecog", prompt, grammar, opts}...)
 	if err != nil {
 		return nil, err
 	}
