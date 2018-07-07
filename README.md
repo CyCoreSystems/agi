@@ -1,6 +1,6 @@
-# AGI library
+# Asterisk AGI library for Go (golang)
 
-Golang Asterisk AGI library [![](https://godoc.org/github.com/CyCoreSystems/agi?status.svg)](http://godoc.org/github.com/CyCoreSystems/agi)
+[![Build Status](https://travis-ci.org/CyCoreSystems/agi.png)](https://travis-ci.org/CyCoreSystems/agi) [![](https://godoc.org/github.com/CyCoreSystems/agi?status.svg)](http://godoc.org/github.com/CyCoreSystems/agi)
 
 This is an Asterisk AGI interface library which may be used for both classical
 AGI, with a standalone executable, or FastAGI, with a TCP server.

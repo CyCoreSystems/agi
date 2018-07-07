@@ -6,4 +6,4 @@ install:
    - go get -u github.com/alecthomas/gometalinter/...
    - go get -u github.com/kevinburke/write_mailmap
    - gometalinter --install
-script: check.sh
+script: ./check.sh
