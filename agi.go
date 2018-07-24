@@ -88,7 +88,7 @@ func (r *Response) Val() (string, error) {
 }
 
 // Regex for AGI response result code and value
-var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=([[:alnum:]]*)(\s.*)?$`)
+var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=(\-?[[:alnum:]]*)(\s.*)?$`)
 
 const (
 	// StatusOK indicates the AGI command was
