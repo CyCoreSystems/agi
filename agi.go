@@ -194,51 +194,54 @@ func (a *AGI) EAGI() io.Reader {
 
 // Command sends the given command line to stdout
 // and returns the response.
-// TODO: this does not handle multi-line responses
+// TODO: this does not handle multi-line responses properly
 func (a *AGI) Command(cmd ...string) (resp *Response) {
 	resp = &Response{}
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	_, err := a.w.Write([]byte(strings.Join(cmd, " ")))
+	cmdString := strings.Join(cmd, " ") + "\n"
+	_, err := a.w.Write([]byte(cmdString))
 	if err != nil {
 		resp.Error = errors.Wrap(err, "failed to send command")
 		return
 	}
 
-	buf := []byte{}
-	count, err := a.r.Read(buf)
-	if err != nil {
-		resp.Error = errors.Wrap(err, "failed to read response")
-		return
-	}
-	raw := string(buf[:count])
+	s := bufio.NewScanner(a.r)
+	for s.Scan() {
+		raw := s.Text()
+		if raw == "" {
+			break
+		}
 
-	// Parse and store the result code
-	pieces := responseRegex.FindStringSubmatch(raw)
-	if pieces == nil {
-		resp.Error = fmt.Errorf("Failed to parse result: %s", raw)
-		return
-	}
+		// Parse and store the result code
+		pieces := responseRegex.FindStringSubmatch(raw)
+		if pieces == nil {
+			resp.Error = fmt.Errorf("failed to parse result: %s", raw)
+			return
+		}
 
-	// Status code is the first substring
-	resp.Status, err = strconv.Atoi(pieces[1])
-	if err != nil {
-		resp.Error = errors.Wrap(err, "failed to get status code")
-		return
-	}
+		// Status code is the first substring
+		resp.Status, err = strconv.Atoi(pieces[1])
+		if err != nil {
+			resp.Error = errors.Wrap(err, "failed to get status code")
+			return
+		}
 
-	// Result code is the second substring
-	resp.ResultString = pieces[2]
-	resp.Result, err = strconv.Atoi(pieces[2])
-	if err != nil {
-		resp.Error = errors.Wrap(err, "failed to parse status code as an integer")
-		return
-	}
+		// Result code is the second substring
+		resp.ResultString = pieces[2]
+		resp.Result, err = strconv.Atoi(pieces[2])
+		if err != nil {
+			resp.Error = errors.Wrap(err, "failed to parse status code as an integer")
+			return
+		}
 
-	// Value is the third (and optional) substring
-	resp.Value = strings.TrimSpace(pieces[3])
+		// Value is the third (and optional) substring
+		resp.Value = strings.TrimSpace(pieces[3])
+
+		break
+	}
 
 	// If the Status code is not 200, return an error
 	if resp.Status != 200 {
