@@ -128,6 +128,9 @@ func NewWithEAGI(r io.Reader, w io.Writer, eagi io.Reader) *AGI {
 
 	s := bufio.NewScanner(a.r)
 	for s.Scan() {
+		if s.Text() == "" {
+			break
+		}
 		terms := strings.Split(s.Text(), ":")
 		if len(terms) == 2 {
 			a.Variables[strings.TrimSpace(terms[0])] = strings.TrimSpace(terms[1])
