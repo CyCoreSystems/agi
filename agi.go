@@ -279,7 +279,7 @@ func (a *AGI) Exec(cmd ...string) (string, error) {
 
 // Get gets the value of the given channel variable
 func (a *AGI) Get(key string) (string, error) {
-	return a.Command("GET FULL VARIABLE", key).Val()
+	return a.Command("GET VARIABLE", key).Val()
 }
 
 // GetData plays a file and receives DTMF, returning the received digits
