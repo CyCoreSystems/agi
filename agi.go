@@ -243,7 +243,8 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		wrappedVal := strings.TrimSpace(pieces[3])
 		resp.Value = strings.TrimSuffix(strings.TrimPrefix(wrappedVal, "("), ")")
 
-		break
+		// FIXME: handle multiple line return values
+		break // nolint
 	}
 
 	// If the Status code is not 200, return an error
