@@ -240,7 +240,8 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		}
 
 		// Value is the third (and optional) substring
-		resp.Value = strings.TrimSpace(pieces[3])
+		wrappedVal := strings.TrimSpace(pieces[3])
+		resp.Value = strings.TrimSuffix(strings.TrimPrefix(wrappedVal, "("), ")")
 
 		break
 	}
