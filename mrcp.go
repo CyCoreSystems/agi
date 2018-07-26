@@ -3,6 +3,7 @@ package agi
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -146,7 +147,12 @@ func (a *AGI) MRCPRecog(grammar string, opts string) (*RecognitionResult, error)
 // SynthAndRecog plays a synthesized prompt and waits for speech to be recognized (requires UniMRCP app and resource to be compiled and loaded in Asterisk).
 func (a *AGI) SynthAndRecog(prompt string, grammar string, opts string) (*RecognitionResult, error) {
 
-	ret, err := a.Exec([]string{"SynthAndRecog", prompt, grammar, opts}...)
+	execOpts := []string{
+		fmt.Sprintf(`"%s"`, prompt),
+		grammar,
+		opts,
+	}
+	ret, err := a.Exec([]string{"SynthAndRecog", strings.Join(execOpts, ",")}...)
 	if err != nil {
 		return nil, err
 	}
