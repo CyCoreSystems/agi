@@ -413,5 +413,6 @@ func (a *AGI) Verbose(msg string, level int) error {
 
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
-	return a.Command("WAIT FOR DIGIT", toMSec(timeout)).Val()
+	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
+	return string(resp.Result), resp.Error
 }
