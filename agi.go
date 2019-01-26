@@ -132,7 +132,7 @@ func NewWithEAGI(r io.Reader, w io.Writer, eagi io.Reader) *AGI {
 			break
 		}
 
-		terms := strings.Split(s.Text(), ":")
+		terms := strings.SplitN(s.Text(), ":", 2)
 		if len(terms) == 2 {
 			a.Variables[strings.TrimSpace(terms[0])] = strings.TrimSpace(terms[1])
 		}
