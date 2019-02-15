@@ -408,7 +408,7 @@ func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit st
 
 // Verbose logs the given message to the verbose message system
 func (a *AGI) Verbose(msg string, level int) error {
-	return a.Command("VERBOSE", msg, strconv.Itoa(level)).Err()
+	return a.Command("VERBOSE", strconv.Quote(msg), strconv.Itoa(level)).Err()
 }
 
 // WaitForDigit waits for a DTMF digit and returns what is received
