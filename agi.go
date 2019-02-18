@@ -204,6 +204,7 @@ func (a *AGI) EAGI() io.Reader {
 func (a *AGI) Command(cmd ...string) (resp *Response) {
 	resp = &Response{}
 	cmdString := strings.Join(cmd, " ")
+	var raw string
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -225,7 +226,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 				resString += " Error:" + resp.Error.Error()
 			}
 			resString = "{" + strings.TrimSpace(resString) + "}"
-			a.logger.Printf("#%s -> %s", cmdString, resString)
+			a.logger.Printf("#%s -> %s -> %s", cmdString, raw, resString)
 		}()
 	}
 
@@ -237,7 +238,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 
 	s := bufio.NewScanner(a.r)
 	for s.Scan() {
-		raw := s.Text()
+		raw = s.Text()
 		if raw == "" {
 			break
 		}
