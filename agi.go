@@ -445,7 +445,12 @@ func (a *AGI) Verbosef(format string, args ...interface{}) error {
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
-	return string(resp.Result), resp.Error
+	if resp.Error == nil && resp.Result >= 32 {
+		resp.ResultString = string(resp.Result)
+	} else {
+		resp.ResultString = ""
+	}
+	return resp.ResultString, resp.Error
 }
 
 // SetLogger setup external logger for low-level logging
