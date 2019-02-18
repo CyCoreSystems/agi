@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"regexp"
@@ -65,6 +66,9 @@ type AGI struct {
 	conn net.Conn
 
 	mu sync.Mutex
+
+	// Logging ability
+	logger *log.Logger
 }
 
 // Response represents a response to an AGI
@@ -199,12 +203,33 @@ func (a *AGI) EAGI() io.Reader {
 // TODO: this does not handle multi-line responses properly
 func (a *AGI) Command(cmd ...string) (resp *Response) {
 	resp = &Response{}
+	cmdString := strings.Join(cmd, " ")
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	cmdString := strings.Join(cmd, " ") + "\n"
-	_, err := a.w.Write([]byte(cmdString))
+	// Logging raw command and answer
+	if a.logger != nil {
+		defer func() {
+			resString := ""
+			if resp.Error == nil {
+				resString += " Status:" + strconv.Itoa(resp.Status)
+				resString += " Result:" + strconv.Itoa(resp.Result)
+				if resp.ResultString != "" {
+					resString += " ResultString:" + resp.ResultString
+				}
+				if resp.Value != "" {
+					resString += " Value:" + resp.Value
+				}
+			} else {
+				resString += " Error:" + resp.Error.Error()
+			}
+			resString = "{" + strings.TrimSpace(resString) + "}"
+			a.logger.Printf("#%s -> %s", cmdString, resString)
+		}()
+	}
+
+	_, err := a.w.Write([]byte(cmdString + "\n"))
 	if err != nil {
 		resp.Error = errors.Wrap(err, "failed to send command")
 		return
@@ -411,8 +436,30 @@ func (a *AGI) Verbose(msg string, level int) error {
 	return a.Command("VERBOSE", msg, strconv.Itoa(level)).Err()
 }
 
+// Verbosef logs the formatted verbose output
+func (a *AGI) Verbosef(format string, args ...interface{}) error {
+	return a.Verbose(fmt.Sprintf(format, args), 9)
+}
+
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
 	return string(resp.Result), resp.Error
+}
+
+// SetLogger setup external logger for low-level logging
+func (a *AGI) SetLogger(l *log.Logger) error {
+	if l != nil && a.logger != nil {
+		return errors.New("Logger already attached")
+	}
+	a.logger = l
+
+	// Output variables
+	if a.logger != nil {
+		for k, v := range a.Variables {
+			a.logger.Printf("$%s=%s\n", k, v)
+		}
+	}
+
+	return nil
 }
