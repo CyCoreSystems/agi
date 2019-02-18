@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"regexp"
@@ -65,6 +66,9 @@ type AGI struct {
 	conn net.Conn
 
 	mu sync.Mutex
+
+	// Logging ability
+	logger *log.Logger
 }
 
 // Response represents a response to an AGI
@@ -199,12 +203,34 @@ func (a *AGI) EAGI() io.Reader {
 // TODO: this does not handle multi-line responses properly
 func (a *AGI) Command(cmd ...string) (resp *Response) {
 	resp = &Response{}
+	cmdString := strings.Join(cmd, " ")
+	var raw string
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	cmdString := strings.Join(cmd, " ") + "\n"
-	_, err := a.w.Write([]byte(cmdString))
+	// Logging raw command and answer
+	if a.logger != nil {
+		defer func() {
+			resString := ""
+			if resp.Error == nil {
+				resString += " Sta:" + strconv.Itoa(resp.Status)
+				resString += " Res:" + strconv.Itoa(resp.Result)
+				if resp.ResultString != "" {
+					resString += " Str:" + resp.ResultString
+				}
+				if resp.Value != "" {
+					resString += " Val:" + resp.Value
+				}
+			} else {
+				resString += " Err:" + resp.Error.Error()
+			}
+			resString = "{" + strings.TrimSpace(resString) + "}"
+			a.logger.Printf("#%s -> %s -> %s", cmdString, raw, resString)
+		}()
+	}
+
+	_, err := a.w.Write([]byte(cmdString + "\n"))
 	if err != nil {
 		resp.Error = errors.Wrap(err, "failed to send command")
 		return
@@ -212,7 +238,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 
 	s := bufio.NewScanner(a.r)
 	for s.Scan() {
-		raw := s.Text()
+		raw = s.Text()
 		if raw == "" {
 			break
 		}
@@ -408,11 +434,37 @@ func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit st
 
 // Verbose logs the given message to the verbose message system
 func (a *AGI) Verbose(msg string, level int) error {
-	return a.Command("VERBOSE", msg, strconv.Itoa(level)).Err()
+	return a.Command("VERBOSE", strconv.Quote(msg), strconv.Itoa(level)).Err()
+}
+
+// Verbosef logs the formatted verbose output
+func (a *AGI) Verbosef(format string, args ...interface{}) error {
+	return a.Verbose(fmt.Sprintf(format, args...), 9)
 }
 
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
-	return string(resp.Result), resp.Error
+	resp.ResultString = ""
+	if resp.Error == nil && resp.Result >= 32 {
+		resp.ResultString = string(resp.Result)
+	}
+	return resp.ResultString, resp.Error
+}
+
+// SetLogger setup external logger for low-level logging
+func (a *AGI) SetLogger(l *log.Logger) error {
+	if l != nil && a.logger != nil {
+		return errors.New("Logger already attached")
+	}
+	a.logger = l
+
+	// Output variables
+	if a.logger != nil {
+		for k, v := range a.Variables {
+			a.logger.Printf("$%s=%s\n", k, v)
+		}
+	}
+
+	return nil
 }
