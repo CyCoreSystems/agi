@@ -214,16 +214,16 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		defer func() {
 			resString := ""
 			if resp.Error == nil {
-				resString += " Status:" + strconv.Itoa(resp.Status)
-				resString += " Result:" + strconv.Itoa(resp.Result)
+				resString += " Sta:" + strconv.Itoa(resp.Status)
+				resString += " Res:" + strconv.Itoa(resp.Result)
 				if resp.ResultString != "" {
-					resString += " ResultString:" + resp.ResultString
+					resString += " Str:" + resp.ResultString
 				}
 				if resp.Value != "" {
-					resString += " Value:" + resp.Value
+					resString += " Val:" + resp.Value
 				}
 			} else {
-				resString += " Error:" + resp.Error.Error()
+				resString += " Err:" + resp.Error.Error()
 			}
 			resString = "{" + strings.TrimSpace(resString) + "}"
 			a.logger.Printf("#%s -> %s -> %s", cmdString, raw, resString)
@@ -445,10 +445,9 @@ func (a *AGI) Verbosef(format string, args ...interface{}) error {
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
+	resp.ResultString = ""
 	if resp.Error == nil && resp.Result >= 32 {
 		resp.ResultString = string(resp.Result)
-	} else {
-		resp.ResultString = ""
 	}
 	return resp.ResultString, resp.Error
 }
