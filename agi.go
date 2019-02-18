@@ -433,12 +433,12 @@ func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit st
 
 // Verbose logs the given message to the verbose message system
 func (a *AGI) Verbose(msg string, level int) error {
-	return a.Command("VERBOSE", msg, strconv.Itoa(level)).Err()
+	return a.Command("VERBOSE", strconv.Quote(msg), strconv.Itoa(level)).Err()
 }
 
 // Verbosef logs the formatted verbose output
 func (a *AGI) Verbosef(format string, args ...interface{}) error {
-	return a.Verbose(fmt.Sprintf(format, args), 9)
+	return a.Verbose(fmt.Sprintf(format, args...), 9)
 }
 
 // WaitForDigit waits for a DTMF digit and returns what is received
