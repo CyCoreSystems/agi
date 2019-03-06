@@ -408,6 +408,9 @@ func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (d
 
 // SayNumber plays the given number.
 func (a *AGI) SayNumber(number string, escapeDigits string) (digit string, err error) {
+	if len(escapeDigits) < 1 {
+		escapeDigits = "\"\""
+	}
 	return a.Command("SAY NUMBER", number, escapeDigits).Val()
 }
 
