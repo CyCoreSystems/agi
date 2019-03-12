@@ -266,8 +266,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		resp.ResultString = pieces[2]
 		resp.Result, err = strconv.Atoi(pieces[2])
 		if err != nil {
-			resp.Error = errors.Wrap(err, "failed to parse status code as an integer")
-			return
+			resp.Error = errors.Wrap(err, "failed to parse result-code as an integer")
 		}
 
 		// Value is the third (and optional) substring
