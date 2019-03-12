@@ -243,6 +243,11 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 			break
 		}
 
+		if strings.HasPrefix(raw, "HANGUP") {
+			resp.Error = fmt.Errorf("channel hung up")
+			return
+		}
+
 		// Parse and store the result code
 		pieces := responseRegex.FindStringSubmatch(raw)
 		if pieces == nil {
