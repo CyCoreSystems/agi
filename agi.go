@@ -447,7 +447,7 @@ func (a *AGI) Verbosef(format string, args ...interface{}) error {
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
 	resp.ResultString = ""
-	if resp.Error == nil && resp.Result >= 32 {
+	if resp.Error == nil && strconv.IsPrint(rune(resp.Result)) {
 		resp.ResultString = string(resp.Result)
 	}
 	return resp.ResultString, resp.Error
