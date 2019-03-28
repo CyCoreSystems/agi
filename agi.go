@@ -310,8 +310,12 @@ func (a *AGI) Get(key string) (string, error) {
 }
 
 // GetData plays a file and receives DTMF, returning the received digits
-func (a *AGI) GetData(name string, timeout int, maxdigits int) (digit string, err error) {
-	return a.Command("GET DATA", name, strconv.Itoa(timeout), strconv.Itoa(maxdigits)).Val()
+func (a *AGI) GetData(sound string, timeout time.Duration, maxdigits int) (digits string, err error) {
+	if sound == "" {
+		sound = "silence/1"
+	}
+	resp := a.Command("GET DATA", sound, toMSec(timeout), strconv.Itoa(maxdigits))
+	return resp.ResultString, resp.Error
 }
 
 // Hangup terminates the call
