@@ -81,6 +81,11 @@ type Response struct {
 	Value        string // Value is the (optional) string value returned
 }
 
+// Result returns the ResultString of a Response, as well as any error encountered.  Depending on the command, this is sometimes more useful than Val()
+func (r *Response) Result() (string,error) {
+  return r.ResultString, r.Error
+}
+
 // Err returns the error value from the response
 func (r *Response) Err() error {
 	return r.Error
@@ -322,7 +327,7 @@ func (a *AGI) GetData(sound string, timeout time.Duration, maxdigits int) (digit
 		sound = "silence/1"
 	}
 	resp := a.Command("GET DATA", sound, toMSec(timeout), strconv.Itoa(maxdigits))
-	return resp.ResultString, resp.Error
+	return resp.Result()
 }
 
 // Hangup terminates the call
@@ -493,7 +498,7 @@ func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	if resp.Error == nil && strconv.IsPrint(rune(resp.Result)) {
 		resp.ResultString = string(resp.Result)
 	}
-	return resp.ResultString, resp.Error
+	return resp.Result()
 }
 
 // SetLogger setup external logger for low-level logging
