@@ -391,16 +391,28 @@ func (a *AGI) Record(name string, opts *RecordOptions) error {
 
 // SayAlpha plays a character string, annunciating each character.
 func (a *AGI) SayAlpha(label string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY ALPHA", label, escapeDigits).Val()
 }
 
 // SayDigits plays a digit string, annunciating each digit.
 func (a *AGI) SayDigits(number string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY DIGITS", number, escapeDigits).Val()
 }
 
 // SayDate plays a date
 func (a *AGI) SayDate(when time.Time, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY DATE", toEpoch(when), escapeDigits).Val()
 }
 
@@ -408,6 +420,11 @@ func (a *AGI) SayDate(when time.Time, escapeDigits string) (digit string, err er
 func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (digit string, err error) {
 	// Extract the timezone from the time
 	zone, _ := when.Zone()
+
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 
 	// Use the Asterisk default format if we are not given one
 	if format == "" {
@@ -419,19 +436,28 @@ func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (d
 
 // SayNumber plays the given number.
 func (a *AGI) SayNumber(number string, escapeDigits string) (digit string, err error) {
-	if len(escapeDigits) < 1 {
-		escapeDigits = "\"\""
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
 	}
 	return a.Command("SAY NUMBER", number, escapeDigits).Val()
 }
 
 // SayPhonetic plays the given phrase phonetically
 func (a *AGI) SayPhonetic(phrase string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY PHOENTIC", phrase, escapeDigits).Val()
 }
 
 // SayTime plays the time part of the given timestamp
 func (a *AGI) SayTime(when time.Time, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY TIME", toEpoch(when), escapeDigits).Val()
 }
 
@@ -443,6 +469,10 @@ func (a *AGI) Set(key, val string) error {
 
 // StreamFile plays the given file to the channel
 func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)).Val()
 }
 
