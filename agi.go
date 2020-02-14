@@ -81,6 +81,11 @@ type Response struct {
 	Value        string // Value is the (optional) string value returned
 }
 
+// Res returns the ResultString of a Response, as well as any error encountered.  Depending on the command, this is sometimes more useful than Val()
+func (r *Response) Res() (string,error) {
+  return r.ResultString, r.Error
+}
+
 // Err returns the error value from the response
 func (r *Response) Err() error {
 	return r.Error
@@ -93,6 +98,9 @@ func (r *Response) Val() (string, error) {
 
 // Regex for AGI response result code and value
 var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=(\-?[[:alnum:]]*)(\s.*)?$`)
+
+// ErrHangup indicates the channel hung up during processing
+var ErrHangup = errors.New("hangup")
 
 const (
 	// StatusOK indicates the AGI command was
@@ -243,6 +251,11 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 			break
 		}
 
+		if strings.HasPrefix(raw, "HANGUP") {
+			resp.Error = ErrHangup
+			return
+		}
+
 		// Parse and store the result code
 		pieces := responseRegex.FindStringSubmatch(raw)
 		if pieces == nil {
@@ -261,8 +274,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		resp.ResultString = pieces[2]
 		resp.Result, err = strconv.Atoi(pieces[2])
 		if err != nil {
-			resp.Error = errors.Wrap(err, "failed to parse status code as an integer")
-			return
+			resp.Error = errors.Wrap(err, "failed to parse result-code as an integer")
 		}
 
 		// Value is the third (and optional) substring
@@ -315,7 +327,7 @@ func (a *AGI) GetData(sound string, timeout time.Duration, maxdigits int) (digit
 		sound = "silence/1"
 	}
 	resp := a.Command("GET DATA", sound, toMSec(timeout), strconv.Itoa(maxdigits))
-	return resp.ResultString, resp.Error
+	return resp.Res()
 }
 
 // Hangup terminates the call
@@ -384,16 +396,28 @@ func (a *AGI) Record(name string, opts *RecordOptions) error {
 
 // SayAlpha plays a character string, annunciating each character.
 func (a *AGI) SayAlpha(label string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY ALPHA", label, escapeDigits).Val()
 }
 
 // SayDigits plays a digit string, annunciating each digit.
 func (a *AGI) SayDigits(number string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY DIGITS", number, escapeDigits).Val()
 }
 
 // SayDate plays a date
 func (a *AGI) SayDate(when time.Time, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY DATE", toEpoch(when), escapeDigits).Val()
 }
 
@@ -401,6 +425,11 @@ func (a *AGI) SayDate(when time.Time, escapeDigits string) (digit string, err er
 func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (digit string, err error) {
 	// Extract the timezone from the time
 	zone, _ := when.Zone()
+
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 
 	// Use the Asterisk default format if we are not given one
 	if format == "" {
@@ -412,16 +441,28 @@ func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (d
 
 // SayNumber plays the given number.
 func (a *AGI) SayNumber(number string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY NUMBER", number, escapeDigits).Val()
 }
 
 // SayPhonetic plays the given phrase phonetically
 func (a *AGI) SayPhonetic(phrase string, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY PHOENTIC", phrase, escapeDigits).Val()
 }
 
 // SayTime plays the time part of the given timestamp
 func (a *AGI) SayTime(when time.Time, escapeDigits string) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("SAY TIME", toEpoch(when), escapeDigits).Val()
 }
 
@@ -433,6 +474,10 @@ func (a *AGI) Set(key, val string) error {
 
 // StreamFile plays the given file to the channel
 func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit string, err error) {
+	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
+	if escapeDigits == "" {
+		escapeDigits = `""`
+	}
 	return a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)).Val()
 }
 
@@ -453,7 +498,7 @@ func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	if resp.Error == nil && strconv.IsPrint(rune(resp.Result)) {
 		resp.ResultString = string(resp.Result)
 	}
-	return resp.ResultString, resp.Error
+	return resp.Res()
 }
 
 // SetLogger setup external logger for low-level logging
