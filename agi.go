@@ -466,11 +466,6 @@ func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	return resp.ResultString, resp.Error
 }
 
-func (a *AGI) Wait(time time.Duration) (err error) {
-	resp := a.Command("WAIT", toMSec(time))
-	return resp.Error
-}
-
 // SetLogger setup external logger for low-level logging
 func (a *AGI) SetLogger(l *log.Logger) error {
 	if l != nil && a.logger != nil {
