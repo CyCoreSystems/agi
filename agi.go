@@ -94,6 +94,9 @@ func (r *Response) Val() (string, error) {
 // Regex for AGI response result code and value
 var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=(\-?[[:alnum:]]*)(\s.*)?$`)
 
+// ErrHangup indicates the channel hung up during processing
+var ErrHangup = errors.New("hangup")
+
 const (
 	// StatusOK indicates the AGI command was
 	// accepted.
@@ -244,7 +247,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		}
 
 		if strings.HasPrefix(raw, "HANGUP") {
-			resp.Error = fmt.Errorf("channel hung up")
+			resp.Error = ErrHangup
 			return
 		}
 
