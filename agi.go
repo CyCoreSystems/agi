@@ -478,7 +478,8 @@ func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit st
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)).Val()
+	resp := a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)).Val()
+	return resp.Res()
 }
 
 // Verbose logs the given message to the verbose message system
