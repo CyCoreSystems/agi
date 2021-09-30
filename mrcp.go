@@ -108,8 +108,11 @@ type SynthResult struct {
 func (a *AGI) MRCPSynth(prompt string, opts string) (res *SynthResult, err error) {
 	var cause string
 	res = new(SynthResult)
-
-	ret, err := a.Exec([]string{"MRCPSynth", prompt, opts}...)
+	execOpts := []string{
+		fmt.Sprintf(`"%s"`, prompt),
+		opts,
+	}
+	ret, err := a.Exec([]string{"MRCPSynth", strings.Join(execOpts, ",")}...)
 	if err != nil {
 		return
 	}
