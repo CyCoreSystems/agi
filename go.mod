@@ -1,4 +1,4 @@
-module github.com/CyCoreSystems/agi
+module github.com/jeffdoubleyou/agi
 
 require github.com/pkg/errors v0.8.1
 
