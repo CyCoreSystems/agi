@@ -82,8 +82,8 @@ type Response struct {
 }
 
 // Res returns the ResultString of a Response, as well as any error encountered.  Depending on the command, this is sometimes more useful than Val()
-func (r *Response) Res() (string,error) {
-  return r.ResultString, r.Error
+func (r *Response) Res() (string, error) {
+	return r.ResultString, r.Error
 }
 
 // Err returns the error value from the response
@@ -299,7 +299,7 @@ func (a *AGI) Answer() error {
 
 // Status returns the channel status
 func (a *AGI) Status() (State, error) {
-	r, err := a.Command("CHANNEL STATUS").Val()
+	r, err := a.Command("CHANNEL STATUS").Res()
 	if err != nil {
 		return StateDown, err
 	}
