@@ -496,7 +496,7 @@ func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
 	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
 	resp.ResultString = ""
 	if resp.Error == nil && strconv.IsPrint(rune(resp.Result)) {
-		resp.ResultString = string(resp.Result)
+		resp.ResultString = string(rune(resp.Result))
 	}
 	return resp.Res()
 }
