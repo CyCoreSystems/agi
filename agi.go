@@ -12,8 +12,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // State describes the Asterisk channel state.  There are mapped
@@ -100,7 +98,7 @@ func (r *Response) Val() (string, error) {
 var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=(\-?[[:alnum:]]*)(\s.*)?$`)
 
 // ErrHangup indicates the channel hung up during processing
-var ErrHangup = errors.New("hangup")
+var ErrHangup = fmt.Errorf("hangup")
 
 const (
 	// StatusOK indicates the AGI command was
@@ -150,6 +148,10 @@ func NewWithEAGI(r io.Reader, w io.Writer, eagi io.Reader) *AGI {
 		}
 	}
 
+	if err := s.Err(); err != nil && a.logger != nil {
+		a.logger.Printf("failed to complete read from EAGI reader: %s", err.Error())
+	}
+
 	return &a
 }
 
@@ -178,14 +180,14 @@ func Listen(addr string, handler HandlerFunc) error {
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		return errors.Wrap(err, "failed to bind server")
+		return fmt.Errorf("failed to bind server: %w", err)
 	}
 	defer l.Close() // nolint: errcheck
 
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			return errors.Wrap(err, "failed to accept TCP connection")
+			return fmt.Errorf("failed to accept TCP connection: %w", err)
 		}
 
 		go handler(NewConn(conn))
@@ -240,11 +242,12 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 
 	_, err := a.w.Write([]byte(cmdString + "\n"))
 	if err != nil {
-		resp.Error = errors.Wrap(err, "failed to send command")
+		resp.Error = fmt.Errorf("failed to send command: %w", err)
 		return
 	}
 
 	s := bufio.NewScanner(a.r)
+
 	for s.Scan() {
 		raw = s.Text()
 		if raw == "" {
@@ -266,7 +269,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		// Status code is the first substring
 		resp.Status, err = strconv.Atoi(pieces[1])
 		if err != nil {
-			resp.Error = errors.Wrap(err, "failed to get status code")
+			resp.Error = fmt.Errorf("failed to get status code: %w", err)
 			return
 		}
 
@@ -274,7 +277,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		resp.ResultString = pieces[2]
 		resp.Result, err = strconv.Atoi(pieces[2])
 		if err != nil {
-			resp.Error = errors.Wrap(err, "failed to parse result-code as an integer")
+			resp.Error = fmt.Errorf("failed to parse result-code as an integer: %w", err)
 		}
 
 		// Value is the third (and optional) substring
@@ -282,7 +285,10 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		resp.Value = strings.TrimSuffix(strings.TrimPrefix(wrappedVal, "("), ")")
 
 		// FIXME: handle multiple line return values
-		break // nolint
+	}
+
+	if err := s.Err(); err != nil {
+		resp.Error = fmt.Errorf("failed to complete stream read: %w", err)
 	}
 
 	// If the Status code is not 200, return an error
@@ -305,7 +311,7 @@ func (a *AGI) Status() (State, error) {
 	}
 	state, err := strconv.Atoi(r)
 	if err != nil {
-		return StateDown, fmt.Errorf("Failed to parse state %s", r)
+		return StateDown, fmt.Errorf("failed to parse state %s", r)
 	}
 	return State(state), nil
 }
@@ -517,7 +523,7 @@ func dtmfDigit(resp *Response) (string, error) {
 // SetLogger setup external logger for low-level logging
 func (a *AGI) SetLogger(l *log.Logger) error {
 	if l != nil && a.logger != nil {
-		return errors.New("Logger already attached")
+		return fmt.Errorf("logger already attached")
 	}
 	a.logger = l
 

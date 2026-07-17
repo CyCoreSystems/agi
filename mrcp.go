@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // RecognitionResult describes the result of an MRCP speech recognition action
@@ -61,16 +59,16 @@ func (a *AGI) getRecognitionResult(combo bool) (res *RecognitionResult, err erro
 	}
 
 	if res.Status, err = a.Get(statusVar); err != nil {
-		return res, errors.Wrap(err, "failed to retrieve status")
+		return res, fmt.Errorf("failed to retrieve status: %w", err)
 	}
 	if cause, err = a.Get("RECOG_COMPLETION_CAUSE"); err != nil {
-		return res, errors.Wrap(err, "failed to retrieve cause")
+		return res, fmt.Errorf("failed to retrieve cause: %w", err)
 	}
 	if res.Cause, err = strconv.Atoi(cause); err != nil {
-		return res, errors.Wrapf(err, "failed to parse cause (%s) as an integer", cause)
+		return res, fmt.Errorf("failed to parse cause (%s) as an integer: %w", cause, err)
 	}
 	if res.Result, err = a.Get("RECOG_RESULT"); err != nil {
-		return res, errors.Wrap(err, "failed to retrieve result")
+		return res, fmt.Errorf("failed to retrieve result: %w", err)
 	}
 
 	return res, nil
@@ -114,17 +112,17 @@ func (a *AGI) MRCPSynth(prompt string, opts string) (res *SynthResult, err error
 		return
 	}
 	if ret == "-2" {
-		return res, errors.New("MRCP applications not loaded")
+		return res, fmt.Errorf("MRCP applications not loaded")
 	}
 
 	if res.Status, err = a.Get("SYNTHSTATUS"); err != nil {
-		return res, errors.Wrap(err, "failed to retrieve status")
+		return res, fmt.Errorf("failed to retrieve status: %w", err)
 	}
 	if cause, err = a.Get("SYNTH_COMPLETION_CAUSE"); err != nil {
-		return res, errors.Wrap(err, "failed to retrieve cause")
+		return res, fmt.Errorf("failed to retrieve cause: %w", err)
 	}
 	if res.Cause, err = strconv.Atoi(cause); err != nil {
-		return res, errors.Wrapf(err, "failed to parse cause (%s) as an integer", cause)
+		return res, fmt.Errorf("failed to parse cause (%s) as an integer: %w", cause, err)
 	}
 
 	return
@@ -138,7 +136,7 @@ func (a *AGI) MRCPRecog(grammar string, opts string) (*RecognitionResult, error)
 		return nil, err
 	}
 	if ret == "-2" {
-		return nil, errors.New("MRCP applications not loaded")
+		return nil, fmt.Errorf("MRCP applications not loaded: %w", err)
 	}
 
 	return a.getRecognitionResult(false)
@@ -157,7 +155,7 @@ func (a *AGI) SynthAndRecog(prompt string, grammar string, opts string) (*Recogn
 		return nil, err
 	}
 	if ret == "-2" {
-		return nil, errors.New("MRCP applications not loaded")
+		return nil, fmt.Errorf("MRCP applications not loaded")
 	}
 
 	return a.getRecognitionResult(true)
