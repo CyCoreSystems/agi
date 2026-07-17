@@ -310,10 +310,13 @@ func (a *AGI) Status() (State, error) {
 	return State(state), nil
 }
 
-// Exec runs a dialplan application
+// Exec runs a dialplan application.
+// The returned string is the AGI result code (ResultString), e.g. "0" / "-1".
+// Asterisk EXEC answers are typically `200 result=<code>` with no parenthesized
+// value, so Val() would be empty while the status lives in result=.
 func (a *AGI) Exec(cmd ...string) (string, error) {
 	cmd = append([]string{"EXEC"}, cmd...)
-	return a.Command(cmd...).Val()
+	return a.Command(cmd...).Res()
 }
 
 // Get gets the value of the given channel variable
@@ -400,7 +403,7 @@ func (a *AGI) SayAlpha(label string, escapeDigits string) (digit string, err err
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY ALPHA", label, escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY ALPHA", label, escapeDigits))
 }
 
 // SayDigits plays a digit string, annunciating each digit.
@@ -409,7 +412,7 @@ func (a *AGI) SayDigits(number string, escapeDigits string) (digit string, err e
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY DIGITS", number, escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY DIGITS", number, escapeDigits))
 }
 
 // SayDate plays a date
@@ -418,7 +421,7 @@ func (a *AGI) SayDate(when time.Time, escapeDigits string) (digit string, err er
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY DATE", toEpoch(when), escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY DATE", toEpoch(when), escapeDigits))
 }
 
 // SayDateTime plays a date using the given format.  See `voicemail.conf` for the format syntax; defaults to `ABdY 'digits/at' IMp`.
@@ -436,7 +439,7 @@ func (a *AGI) SayDateTime(when time.Time, escapeDigits string, format string) (d
 		format = "ABdY 'digits/at' IMp"
 	}
 
-	return a.Command("SAY DATETIME", toEpoch(when), escapeDigits, format, zone).Val()
+	return dtmfDigit(a.Command("SAY DATETIME", toEpoch(when), escapeDigits, format, zone))
 }
 
 // SayNumber plays the given number.
@@ -445,7 +448,7 @@ func (a *AGI) SayNumber(number string, escapeDigits string) (digit string, err e
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY NUMBER", number, escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY NUMBER", number, escapeDigits))
 }
 
 // SayPhonetic plays the given phrase phonetically
@@ -454,7 +457,7 @@ func (a *AGI) SayPhonetic(phrase string, escapeDigits string) (digit string, err
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY PHOENTIC", phrase, escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY PHOENTIC", phrase, escapeDigits))
 }
 
 // SayTime plays the time part of the given timestamp
@@ -463,7 +466,7 @@ func (a *AGI) SayTime(when time.Time, escapeDigits string) (digit string, err er
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("SAY TIME", toEpoch(when), escapeDigits).Val()
+	return dtmfDigit(a.Command("SAY TIME", toEpoch(when), escapeDigits))
 }
 
 // Set sets the given channel variable to
@@ -472,13 +475,16 @@ func (a *AGI) Set(key, val string) error {
 	return a.Command("SET VARIABLE", key, val).Err()
 }
 
-// StreamFile plays the given file to the channel
+// StreamFile plays the given file to the channel.
+// The returned digit is taken from result= (ASCII code of the key), not from
+// Value. Asterisk answers like `200 result=54 endpos=21760` put the DTMF in
+// result= and endpos in the trailing field; Val() would incorrectly return endpos.
 func (a *AGI) StreamFile(name string, escapeDigits string, offset int) (digit string, err error) {
 	// NOTE: AGI needs empty double quotes hold the place of the empty value in the line
 	if escapeDigits == "" {
 		escapeDigits = `""`
 	}
-	return a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)).Val()
+	return dtmfDigit(a.Command("STREAM FILE", name, escapeDigits, strconv.Itoa(offset)))
 }
 
 // Verbose logs the given message to the verbose message system
@@ -493,12 +499,19 @@ func (a *AGI) Verbosef(format string, args ...interface{}) error {
 
 // WaitForDigit waits for a DTMF digit and returns what is received
 func (a *AGI) WaitForDigit(timeout time.Duration) (digit string, err error) {
-	resp := a.Command("WAIT FOR DIGIT", toMSec(timeout))
-	resp.ResultString = ""
-	if resp.Error == nil && strconv.IsPrint(rune(resp.Result)) {
-		resp.ResultString = string(rune(resp.Result))
+	return dtmfDigit(a.Command("WAIT FOR DIGIT", toMSec(timeout)))
+}
+
+// dtmfDigit maps AGI result= ASCII codes to a digit string (same idea as
+// historical WaitForDigit). result=0 / non-printable → "".
+func dtmfDigit(resp *Response) (string, error) {
+	if resp.Error != nil {
+		return "", resp.Error
 	}
-	return resp.Res()
+	if strconv.IsPrint(rune(resp.Result)) {
+		return string(rune(resp.Result)), nil
+	}
+	return "", nil
 }
 
 // SetLogger setup external logger for low-level logging
