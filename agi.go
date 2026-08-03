@@ -285,6 +285,7 @@ func (a *AGI) Command(cmd ...string) (resp *Response) {
 		resp.Value = strings.TrimSuffix(strings.TrimPrefix(wrappedVal, "("), ")")
 
 		// FIXME: handle multiple line return values
+		break // nolint
 	}
 
 	if err := s.Err(); err != nil {
