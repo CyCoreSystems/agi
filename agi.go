@@ -100,6 +100,12 @@ var responseRegex = regexp.MustCompile(`^([\d]{3})\sresult=(\-?[[:alnum:]]*)(\s.
 // ErrHangup indicates the channel hung up during processing
 var ErrHangup = fmt.Errorf("hangup")
 
+// ErrInvalidArgument indicates that a command argument contained characters
+// that cannot be transmitted safely over the line-delimited AGI protocol
+// (line breaks or NUL bytes). The AGI protocol provides no escaping
+// mechanism, so such arguments would inject additional AGI commands.
+var ErrInvalidArgument = fmt.Errorf("invalid command argument")
+
 const (
 	// StatusOK indicates the AGI command was
 	// accepted.
@@ -208,11 +214,31 @@ func (a *AGI) EAGI() io.Reader {
 	return a.eagi
 }
 
+// validateCommandArguments rejects arguments that would break the framing of
+// the line-delimited AGI protocol. AGI has no escaping mechanism, so an
+// argument containing a line break is transmitted as one or more additional
+// commands (e.g. "EXEC System <cmd>") executed by Asterisk with full AGI
+// privileges.
+func validateCommandArguments(cmd []string) error {
+	for i, arg := range cmd {
+		if strings.ContainsAny(arg, "\n\r\x00") {
+			return fmt.Errorf("%w: argument %d contains a line break or NUL byte", ErrInvalidArgument, i)
+		}
+	}
+	return nil
+}
+
 // Command sends the given command line to stdout
 // and returns the response.
 // TODO: this does not handle multi-line responses properly
 func (a *AGI) Command(cmd ...string) (resp *Response) {
 	resp = &Response{}
+
+	if err := validateCommandArguments(cmd); err != nil {
+		resp.Error = err
+		return
+	}
+
 	cmdString := strings.Join(cmd, " ")
 	var raw string
 
